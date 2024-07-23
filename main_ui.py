@@ -100,11 +100,26 @@ def split_dataframe(df):
 
 
 def save_member_info(member_info):
+    print(["연락처"][0].replace("-",""))
     df = pd.DataFrame([member_info])
+    df.insert(0,"회원번호",int(df["연락처"][0].replace("-","")))
     csv_file_path = 'member_info.csv'
-    df.to_csv(csv_file_path, index=False)
+    df.to_csv(csv_file_path, index=False,encoding='cp949')
     return csv_file_path
 
+
+# Helper function to create time slots
+def create_time_slots():
+    time_slots = []
+    start_time = datetime.strptime("06:00", "%H:%M")
+    end_time = datetime.strptime("23:30", "%H:%M")
+    current_time = start_time
+
+    while current_time <= end_time:
+        time_slots.append(current_time.strftime("%H:%M"))
+        current_time += timedelta(minutes=30)
+
+    return time_slots
 
 # Main function
 def main():
@@ -116,7 +131,7 @@ def main():
         month = st.number_input('Month', min_value=1, max_value=12, value=datetime.today().month)
 
     # 탭 선택
-    tab = st.selectbox("보기 선택", ["주차별 테이블", "회원 정보 입력"])
+    tab = st.selectbox("보기 선택", ["주차별 테이블", "회원 정보 입력", "스케줄 변경", "보강 등록"])
 
     if tab == "주차별 테이블":
         st.write(f"### {year}년 {month}월")
@@ -128,24 +143,31 @@ def main():
             st.dataframe(expanded_df, height=400, width=1500)  # Adjust height as needed
 
     elif tab == "회원 정보 입력":
+
         with st.form(key='member_form'):
             member_name = st.text_input('회원명')
-            age = st.number_input('연령', min_value=0)
+            age = st.selectbox('연령', ['미취학', '초등학생', '중학생', '고등학생', '20대', '30대', '40대', '50대', '60대이상'])
             gender = st.selectbox('성별', ['남성', '여성'])
             status = st.selectbox('진행 여부', ['진행 중', '완료', '취소'])
-            acquaintance = st.selectbox('지인 여부', ['네', '아니오'])
+            acquaintance = st.selectbox('지인 여부', ['O', 'X'])
             contact = st.text_input('연락처')
             vehicle_number = st.text_input('차량 번호')
             payment_method = st.selectbox('결제 수단', ['신용카드', '현금', '기타'])
             individual_or_group = st.selectbox('개인/그룹', ['개인', '그룹'])
-            registration_time = st.text_input('등록 시간', value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            registration_time = st.selectbox('레슨 요일 선택', value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             start_date = st.date_input('시작일')
             end_date = st.date_input('종료일')
-
-            submit_button = st.form_submit_button(label='제출')
-
+            membership_grade = st.selectbox('테니스 Level', ['LV1', 'LV2', 'LV3', 'LV4'])
+            coach = st.selectbox('담당 코치',['김상엽', '박지훈','이지윤', '이민혁', '장우혁'])
+            payment_amount = st.number_input('결제 금액', min_value=0.0, format="%.2f")
+            payment_status = st.selectbox('결제 완료 수단', ['신용카드', '현금', '계좌이체', '기타'])
+            discount_rate = st.number_input('할인율 (%)', min_value=0.0, max_value=100.0, format="%.2f")
+            registration_month = st.selectbox('등록 월', [f'{i:02d}' for i in range(1, 13)])
+            registration_source = st.selectbox('등록 경로', ['온라인', '오프라인', '기타'])
+            notes = st.text_area('비고')
+            submit_button = st.form_submit_button(label='입력 내용 확정 하기')
             if submit_button:
-                member_info = {
+                st.session_state.member_info  = {
                     '회원명': member_name,
                     '연령': age,
                     '성별': gender,
@@ -158,9 +180,60 @@ def main():
                     '등록 시간': registration_time,
                     '시작일': start_date,
                     '종료일': end_date,
+                    '회원 등급': membership_grade,
+                    '담당 코치': coach,
+                    '결제 금액': payment_amount,
+                    '결제 완료 수단': payment_status,
+                    '할인율': discount_rate,
+                    '등록 월': registration_month,
+                    '등록 경로': registration_source,
+                    '비고': notes
                 }
-                csv_file_path = save_member_info(member_info)
+
+        if st.button("DB에 저장"):
+            try:
+                csv_file_path = save_member_info(st.session_state.member_info )
                 st.success(f'정보가 {csv_file_path}에 저장되었습니다.')
+
+            except:
+                st.warning("저장 실패!! 전화번호 혹은 필수정보가 입력되지 않았습니다.")
+
+
+    elif tab == "스케줄 변경":
+        st.header("스케줄 변경")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("변경 전")
+            old_date = st.date_input("날짜 선택", key="old_date", value=datetime.today())
+            time_slots = create_time_slots()
+            old_start_time = st.selectbox("시간 선택", time_slots, key="old_time")
+
+        with col2:
+            st.subheader("변경 후")
+            new_date = st.date_input("날짜 선택", key="new_date", value=datetime.today())
+            new_start_time = st.selectbox("시간 선택", time_slots, key="new_time")
+
+        if st.button("변경 확인"):
+            st.write(f"변경 전 날짜: {old_date}")
+            st.write(f"변경 전 시간대: {old_start_time}")
+            st.write(f"변경 후 날짜: {new_date}")
+            st.write(f"변경 후 시간대: {new_start_time}")
+
+    elif tab == "보강 등록":
+        st.header("보강 등록")
+        add_date = st.date_input("날짜 선택", key="add_date", value=datetime.today())
+        time_slots = create_time_slots()
+        add_start_time = st.selectbox("시간 선택", time_slots, key="add_time")
+
+
+
+        if st.button("보강 확인"):
+            st.write(f"보강 날짜: {add_date}")
+            st.write(f"보강 시간대: {add_start_time}")
+
+
 
 
 if __name__ == "__main__":
