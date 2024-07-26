@@ -52,6 +52,7 @@ def time_slots():
 def create_weekly_dataframes(year, month):
     month_days, previous_month, previous_year, next_month, next_year = create_calendar(year, month)
     slots = time_slots()
+    # print(len(slots))
 
     weekly_dfs = {}
     week_num = 1
@@ -143,6 +144,9 @@ def main():
             st.dataframe(expanded_df, height=400, width=1500)  # Adjust height as needed
 
     elif tab == "회원 정보 입력":
+        # Initialize the session state for storing selected slots
+        if 'selected_slots' not in st.session_state:
+            st.session_state.selected_slots = []
 
         with st.form(key='member_form'):
             member_name = st.text_input('회원명')
@@ -154,7 +158,8 @@ def main():
             vehicle_number = st.text_input('차량 번호')
             payment_method = st.selectbox('결제 수단', ['신용카드', '현금', '기타'])
             individual_or_group = st.selectbox('개인/그룹', ['개인', '그룹'])
-            registration_time = st.selectbox('레슨 요일 선택', value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+
             start_date = st.date_input('시작일')
             end_date = st.date_input('종료일')
             membership_grade = st.selectbox('테니스 Level', ['LV1', 'LV2', 'LV3', 'LV4'])
@@ -166,6 +171,7 @@ def main():
             registration_source = st.selectbox('등록 경로', ['온라인', '오프라인', '기타'])
             notes = st.text_area('비고')
             submit_button = st.form_submit_button(label='입력 내용 확정 하기')
+
             if submit_button:
                 st.session_state.member_info  = {
                     '회원명': member_name,
@@ -177,7 +183,6 @@ def main():
                     '차량 번호': vehicle_number,
                     '결제 수단': payment_method,
                     '개인/그룹': individual_or_group,
-                    '등록 시간': registration_time,
                     '시작일': start_date,
                     '종료일': end_date,
                     '회원 등급': membership_grade,
@@ -189,8 +194,38 @@ def main():
                     '등록 경로': registration_source,
                     '비고': notes
                 }
+        st.title("요일 및 시간대 선택")
+        # 요일 목록
+        days_of_week = ["월", "화", "수", "목", "금", "토", "일"]
+        # 요일 선택
+        selected_day = st.selectbox("요일 선택", days_of_week)
+        # 시간대 목록 생성
+        time_slots = create_time_slots()
+        # 시간대 선택
+        selected_time = st.selectbox("시간대 선택", time_slots)
+        # 선택 추가 버튼
 
-        if st.button("DB에 저장"):
+        col1_day, col2_day = st.columns(2)
+        with col1_day:
+            if st.button("선택 추가"):
+                st.session_state.selected_slots.append((selected_day, selected_time))
+                st.success(f"{selected_day} - {selected_time} 추가됨")
+        with col2_day:
+            if st.button("초기화"):
+                st.session_state.selected_slots = []
+                st.success("선택이 초기화되었습니다")
+        # 선택된 요일 및 시간대 표시
+        st.write("선택된 요일 및 시간대:")
+
+        df = pd.DataFrame(st.session_state.selected_slots, columns=["요일", "시간대"])
+
+        st.dataframe(df)
+
+        # 선택 초기화 버튼
+
+        st.write("")
+        st.write("")
+        if st.button("회원 정보 DB에 저장 및 캘린더에 박기"):
             try:
                 csv_file_path = save_member_info(st.session_state.member_info )
                 st.success(f'정보가 {csv_file_path}에 저장되었습니다.')
