@@ -162,20 +162,23 @@ def main():
             st.session_state.selected_slots = []
         if 'resistered' not in st.session_state:
             st.session_state["resistered"] = 0
+        if 'df_resistered' not in st.session_state:
+            st.session_state['df_resistered'] = pd.DataFrame()
         contact = st.text_input('연락처')
-        df_resistered = pd.DataFrame()
+
         if st.button(label="회원정보 불러오기"):
 
             csv_file_path = 'member_info.csv'
             df_member = pd.read_csv(csv_file_path, header=0, encoding='cp949')
-            df_resistered = df_member[df_member['회원번호'] == int(contact.replace("-", ""))]
-            if len(df_resistered) != 0:
+            st.session_state['df_resistered']  = df_member[df_member['회원번호'] == int(contact.replace("-", ""))]
+            if len(st.session_state['df_resistered'] ) != 0:
                 st.session_state["resistered"] = 1
             else:
                 st.session_state["resistered"] = 0
 
-        if st.session_state["resistered"] == 1 and len(df_resistered) != 0:
-            df_resistered = df_resistered.iloc[0]
+        if st.session_state["resistered"] == 1:
+
+            df_resistered = st.session_state['df_resistered'] .iloc[0]
             member_name = st.text_input('회원명', value=df_resistered["회원명"])
             age_list_index = age_list.index(df_resistered["연령"])
             age = st.selectbox('연령', age_list, index=age_list_index)
@@ -321,13 +324,13 @@ def main():
                 # Fill the DataFrame with the schedule
                 date_str, time_str = be.fill_dataframe_with_schedule(df, matching_dates, repeat_number,member_yuji)
                 if date_str != 0 and time_str != 0:
-                    st.warning(f"{date_str}날짜에 {time_str}시간대의 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
-                print(df)
+                    st.warning(f"{date_str}날짜에 {time_str}시간대의 코트 및 강사의 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
+                else:
+                    print(df)
+                    csv_file_path = save_member_info(st.session_state.member_info)
+                    df.to_csv("raw_date.csv", encoding='cp949')
+                    st.success(f'정보가 {csv_file_path}에 저장되었습니다.')
 
-
-                csv_file_path = save_member_info(st.session_state.member_info )
-                df.to_csv("raw_date.csv", encoding='cp949')
-                st.success(f'정보가 {csv_file_path}에 저장되었습니다.')
 
 
             except Exception as err:
