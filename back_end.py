@@ -67,6 +67,9 @@ def fill_dataframe_with_schedule(df, schedule, number_repeat, member_info):
     """
     idx_N = 0
     # print(schedule)
+    coach = member_info[-3:]
+    print("coach", coach)
+    already_coach = []
     for entry in schedule:
         date_str, time_str = entry.split()
         time_slot_base = f"{time_str}-"
@@ -74,8 +77,11 @@ def fill_dataframe_with_schedule(df, schedule, number_repeat, member_info):
         # Find the first available slot (1-4) for the given date and time
         for slot in range(1, 5):
             time_slot = time_slot_base + str(slot)
-            print(df.at[time_slot, date_str])
-            if df.at[time_slot, date_str] == "" or pd.isna(df.at[time_slot, date_str]):
+            print("내용",df.at[time_slot, date_str])
+            if df.at[time_slot, date_str] == "" or pd.isna(df.at[time_slot, date_str]) :
+                if coach in already_coach:
+                    print(f"{date_str} 날짜에 {time_str} 시간대의 강사 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
+                    return date_str, time_str
                 if idx_N >= number_repeat:
                     return 0, 0
                 print(f"{member_info} {idx_N+1}/{number_repeat}회차")
@@ -84,6 +90,8 @@ def fill_dataframe_with_schedule(df, schedule, number_repeat, member_info):
                 print(idx_N)
                 break
             else:
+                already_coach.append(df.at[time_slot, date_str][df.at[time_slot, date_str].index(" ")+1:df.at[time_slot, date_str].index(" ")+4])
+                print(already_coach)
                 continue
         else:
             # print(time_slot)
