@@ -84,7 +84,7 @@ def create_weekly_dataframes(year, month):
         df_time = pd.read_csv("raw_date.csv", header=0, index_col=0, encoding='cp949')
         df = pd.DataFrame(index=index, columns=columns)
         df.update(df_time)
-        print(df)
+        # print(df)
         weekly_dfs[f'Week {week_num}'] = df
         week_num += 1
 
@@ -127,7 +127,7 @@ def create_time_slots():
 
 # Main function
 def main():
-    st.title("주차별 일정 보기")
+    # st.title("Clay 회원 관리 System")
 
     # 사이드바에서 연도 및 월 선택
     with st.sidebar:
@@ -135,7 +135,7 @@ def main():
         month = st.number_input('Month', min_value=1, max_value=12, value=datetime.today().month)
 
     # 탭 선택
-    tab = st.selectbox("보기 선택", ["주차별 테이블", "회원 정보 입력", "스케줄 변경", "보강 등록"])
+    tab = st.selectbox("보기 선택", ["주차별 테이블", "회원 정보 입력", "스케줄 변경", "대관 등록", "Class 진행 확인"])
 
     if tab == "주차별 테이블":
         st.write(f"### {year}년 {month}월")
@@ -322,7 +322,7 @@ def main():
 
                 df = pd.read_csv("raw_date.csv", header=0, index_col=0, encoding='cp949')
                 # Fill the DataFrame with the schedule
-                date_str, time_str = be.fill_dataframe_with_schedule(df, matching_dates, repeat_number,member_yuji)
+                date_str, time_str, df = be.fill_dataframe_with_schedule(df, matching_dates, repeat_number,member_yuji)
                 if date_str != 0 and time_str != 0:
                     st.warning(f"{date_str}날짜에 {time_str}시간대의 코트 및 강사의 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
                 else:
@@ -348,29 +348,122 @@ def main():
             old_date = st.date_input("날짜 선택", key="old_date", value=datetime.today())
             time_slots = create_time_slots()
             old_start_time = st.selectbox("시간 선택", time_slots, key="old_time")
+            coach_list = ['김상엽', '박지훈', '이지윤', '이민혁', '장우혁','1코트', '2코트', '1머신', '2머신']
+            coach = st.selectbox('담당 코치', coach_list)
+            schedule = f"{old_date} {old_start_time}"
+            if st.button("변경 전 Schedule 조회"):
+                df = pd.read_csv("raw_date.csv", header=0, index_col=0, encoding='cp949')
+                df_result = be.find_dataframe_with_schedule(df, schedule, coach)
+                if df_result != -1:
+                    st.session_state["df_result"] = df_result
+                    st.write(df_result)
+                else:
+                    st.write("상기 시간대에 스케줄을 찾을 수 없습니다.")
+
 
         with col2:
             st.subheader("변경 후")
             new_date = st.date_input("날짜 선택", key="new_date", value=datetime.today())
             new_start_time = st.selectbox("시간 선택", time_slots, key="new_time")
+            chg_schedule = [f"{new_date} {new_start_time}"]
+            st.write("")
+            st.write("")
+            st.write("")
+            st.write("")
+            st.write("")
+            if st.button("날짜 변경 진행"):
+                df = pd.read_csv("raw_date.csv", header=0, index_col=0, encoding='cp949')
+                date_str, time_str, df = be.change_dataframe_with_schedule(df, schedule, chg_schedule, st.session_state["df_result"])
 
-        if st.button("변경 확인"):
-            st.write(f"변경 전 날짜: {old_date}")
-            st.write(f"변경 전 시간대: {old_start_time}")
-            st.write(f"변경 후 날짜: {new_date}")
-            st.write(f"변경 후 시간대: {new_start_time}")
+                if date_str != 0 and time_str != 0:
+                    st.warning(f"{date_str}날짜에 {time_str}시간대의 코트 및 강사의 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
 
-    elif tab == "보강 등록":
-        st.header("보강 등록")
-        add_date = st.date_input("날짜 선택", key="add_date", value=datetime.today())
+                else:
+                    print(df)
+                    df.to_csv("raw_date.csv", encoding='cp949')
+                    st.write(f"변경 전 날짜: {old_date}")
+                    st.write(f"변경 전 시간대: {old_start_time}")
+                    st.write(f"변경 후 날짜: {new_date}")
+                    st.write(f"변경 후 시간대: {new_start_time}")
+                    st.write(f"변경 완료 되었습니다.")
+
+    elif tab == "대관 등록":
         time_slots = create_time_slots()
-        add_start_time = st.selectbox("시간 선택", time_slots, key="add_time")
+        st.subheader("대관 등록")
+        new_date = st.date_input("날짜 선택", key="new_date", value=datetime.today())
+        new_start_time = st.selectbox("시간 선택", time_slots, key="new_time")
+        chg_schedule = [f"{new_date} {new_start_time}"]
+        member_name = st.text_input('회원명')
+        coach_list = ['1코트', '2코트', '1머신', '2머신', '김상엽', '박지훈', '이지윤', '이민혁', '장우혁']
+        coach = st.selectbox('대관 or 코치님', coach_list)
+        member_yuji = f"{member_name} {coach}"
+        st.write("")
+        st.write("")
+
+        if st.button("대관 등록"):
+            df = pd.read_csv("raw_date.csv", header=0, index_col=0, encoding='cp949')
+
+            date_str, time_str, df = be.fill_dataframe_with_schedule(df, chg_schedule, 1, member_yuji)
+            if date_str != 0 and time_str != 0:
+                st.warning(f"{date_str}날짜에 {time_str}시간대의 코트 및 강사의 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
+            else:
+                print(df)
+                df.to_csv("raw_date.csv", encoding='cp949')
+                st.write(f"대관 날짜: {new_date}")
+                st.write(f"대관 시간대: {new_start_time}")
+                st.write(f"추가 완료 되었습니다.")
+
+    elif tab == "Class 진행 확인":
+        st.subheader("Class 진행 확인")
+        date = st.date_input("날짜 선택", key="new_date", value=datetime.today())
+        coach_list = [ '김상엽', '박지훈', '이지윤', '이민혁', '장우혁', 'ALL']
+        coach = st.selectbox('코치님', coach_list)
+        if "df_coach" not in st.session_state:
+            st.session_state["df_coach"] = pd.DataFrame()
+
+        if st.button("일간 Class 조회"):
+            st.session_state["class"] = 1
+            df = pd.read_csv("raw_date.csv", header=0, index_col=0, encoding='cp949')
+            df_coach = be.find_coach_with_schedule(df, f"{date}", coach)
+            df_coach = df_coach.to_frame()
+            df_coach.insert(0, "Select", False)
+            st.data_editor(
+                df_coach,
+                column_config={
+                    "Select": st.column_config.CheckboxColumn(
+                        "Select",
+                        help="진행된 Class 선택",
+                        default=False,
+                    ),
+                }
+
+            )
+
+            # 선택된 항목만 필터링하여 표시
+            st.session_state["df_coach"] = df_coach
+
+        else:
+            df_coach = st.session_state["df_coach"]
+            # 체크박스 생성 및 상태 업데이트
+
+            edited_df = st.data_editor(
+                df_coach,
+                column_config={
+                    "Select": st.column_config.CheckboxColumn(
+                        "Select",
+                        help="진행된 Class 선택",
+                        default=False,
+                    ),
+                }
+
+            )
+            if st.button("Class 진행 확정"):
+                df, idx = be.confirm_dataframe_with_schedule(edited_df)
+                df.to_csv("raw_date.csv", encoding='cp949')
+                st.write(f"Class 진행 {idx}건이 컨펌 완료 되었습니다.")
 
 
 
-        if st.button("보강 확인"):
-            st.write(f"보강 날짜: {add_date}")
-            st.write(f"보강 시간대: {add_start_time}")
 
 
 
