@@ -67,7 +67,10 @@ def fill_dataframe_with_schedule(df, schedule, number_repeat, member_info):
     """
     idx_N = 0
     # print(schedule)
-    coach = member_info[-3:]
+    if ":" in member_info:
+        coach = member_info[member_info.index(":")-3:member_info.index(":")]
+    else:
+        coach = member_info[-3:]
     print("coach", coach)
     already_coach = []
     for entry in schedule:
@@ -81,14 +84,20 @@ def fill_dataframe_with_schedule(df, schedule, number_repeat, member_info):
             if df.at[time_slot, date_str] == "" or pd.isna(df.at[time_slot, date_str]) :
                 if coach in already_coach:
                     print(f"{date_str} 날짜에 {time_str} 시간대의 강사 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
-                    return date_str, time_str
+                    return date_str, time_str, df
                 if idx_N >= number_repeat:
-                    return 0, 0
-                print(f"{member_info} {idx_N+1}/{number_repeat}회차")
-                df.at[time_slot, date_str] = f"{member_info}:{idx_N+1}/{number_repeat}회차" # 회원데이터로 채우기
-                idx_N += 1
-                print(idx_N)
-                break
+                    return 0, 0, df
+                if ":" not in member_info:
+                    print(f"{member_info} {idx_N+1}/{number_repeat}회차")
+                    df.at[time_slot, date_str] = f"{member_info}:{idx_N+1}/{number_repeat}회차" # 회원데이터로 채우기
+                    idx_N += 1
+                else:
+                    print(f"{member_info}회차")
+                    df.at[time_slot, date_str] = f"{member_info}" # 회원데이터로 채우기
+                    idx_N += 1
+                    print(idx_N)
+                    print(idx_N)
+
             else:
                 already_coach.append(df.at[time_slot, date_str][df.at[time_slot, date_str].index(" ")+1:df.at[time_slot, date_str].index(" ")+4])
                 print(already_coach)
@@ -96,7 +105,88 @@ def fill_dataframe_with_schedule(df, schedule, number_repeat, member_info):
         else:
             # print(time_slot)
             print(f"{date_str} 날짜에 {time_str} 시간대의 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
-            return date_str, time_str
+            return date_str, time_str, df
+
+
+
+def find_dataframe_with_schedule(df, schedule, coach):
+
+    date_str, time_str = schedule.split()
+    time_slot_base = f"{time_str}-"
+
+    # Find the first available slot (1-4) for the given date and time
+    try:
+        for slot in range(1, 5):
+            time_slot = time_slot_base + str(slot)
+            print("내용",df.at[time_slot, date_str])
+            if coach in df.at[time_slot, date_str]:
+                return df.at[time_slot, date_str]
+            else:
+                continue
+        else:
+            # print(time_slot)
+            print(f"{date_str} 날짜에 {time_str}에서 {coach}님의 스케줄을 찾을 수 없습니다.")
+            return -1
+    except:
+        return -1
+
+
+def change_dataframe_with_schedule(df, pre_schedule, chg_schedule, df_result):
+
+    date_str, time_str = pre_schedule.split()
+
+    time_slot_base = f"{time_str}-"
+
+
+    print("df_result", df_result)
+    tg_date_str, tg_time_str, df = fill_dataframe_with_schedule(df, chg_schedule, int(1), df_result)
+
+    if tg_date_str != 0 and tg_time_str != 0:
+
+        print(f"{date_str}날짜에 {time_str}시간대의 코트 및 강사의 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
+        return tg_date_str, tg_time_str, df
+
+    # Find the first available slot (1-4) for the given date and time
+    for slot in range(1, 5):
+        time_slot = time_slot_base + str(slot)
+        print("내용",df.at[time_slot, date_str])
+        try:
+            if np.isnan(df.at[time_slot, date_str]):
+                continue
+        except:
+            if df_result in df.at[time_slot, date_str]:
+                print(df.at[time_slot, date_str])
+                df.at[time_slot, date_str] = np.nan
+            else:
+                continue
+
+    return 0, 0, df
+
+def find_coach_with_schedule(df, date_str, coach):
+
+    df_date = df[f'{date_str}']
+    if coach == "ALL":
+        df_coatch = df_date.dropna()
+    else:
+        df_coatch = df_date[df_date.str.contains(coach, na=False)]
+
+    return df_coatch
+
+
+def confirm_dataframe_with_schedule(df_confirm):
+    date_str = df_confirm.columns[1]
+    df = pd.read_csv("raw_date.csv", header=0, index_col=0, encoding='cp949')
+    idx_N = 0
+    for i, time_slot in enumerate(df_confirm.index):
+        print("내용",df_confirm.at[time_slot, df_confirm.columns[0]])
+        if "진행" in df.at[time_slot, date_str]:
+            continue
+        if df_confirm.at[time_slot, df_confirm.columns[0]]:
+            df.at[time_slot, date_str] = f"{df_confirm.at[time_slot, date_str]}, 진행"
+            idx_N +=1
+
+    return df, idx_N
+
 
 
 
