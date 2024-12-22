@@ -102,10 +102,10 @@ def fill_dataframe_with_schedule(df, schedule, number_repeat, member_info):
                 already_coach.append(df.at[time_slot, date_str][df.at[time_slot, date_str].index(" ")+1:df.at[time_slot, date_str].index(" ")+4])
                 print(already_coach)
                 continue
-        else:
-            # print(time_slot)
-            print(f"{date_str} 날짜에 {time_str} 시간대의 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
-            return date_str, time_str, df
+    else:
+        # print(time_slot)
+        print(f"{date_str} 날짜에 {time_str} 시간대의 schedule이 꽉 차있습니다. 다른 시간대로 다시 시도하세요")
+        return date_str, time_str, df
 
 
 
