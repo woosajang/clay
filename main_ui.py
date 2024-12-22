@@ -84,7 +84,7 @@ def create_weekly_dataframes(year, month):
         df_time = pd.read_csv("raw_date.csv", header=0, index_col=0, encoding='cp949')
         df = pd.DataFrame(index=index, columns=columns)
         df.update(df_time)
-        # print(df)
+        print(df)
         weekly_dfs[f'Week {week_num}'] = df
         week_num += 1
 
@@ -194,7 +194,7 @@ def main():
             individual_or_group_list_index = individual_or_group_list.index(df_resistered["개인/그룹"])
             individual_or_group = st.selectbox('개인/그룹', individual_or_group_list, index=individual_or_group_list_index)
             start_date = st.date_input('시작일',value=datetime(int(df_resistered["시작일"][:4]), int(df_resistered["시작일"][5:7]), int(df_resistered["시작일"][8:10])) )
-            repeat_number = st.number_input('반복 횟수', min_value=0, format="%.d", value=int(df_resistered["반복 횟수"]))
+            repeat_number = st.number_input('쿠폰 횟수', min_value=0, format="%.d", value=int(df_resistered["쿠폰 횟수"]))
             membership_grade_list_index = membership_grade_list.index(df_resistered["회원 등급"])
             membership_grade = st.selectbox('테니스 Level', membership_grade_list, index=membership_grade_list_index)
             coach_list_index = coach_list.index(df_resistered["담당 코치"])
@@ -218,7 +218,7 @@ def main():
                 '결제 수단': payment_method,
                 '개인/그룹': individual_or_group,
                 '시작일': start_date,
-                '반복 횟수': repeat_number,
+                '쿠폰 횟수': repeat_number,
                 '회원 등급': membership_grade,
                 '담당 코치': coach,
                 '결제 금액': payment_amount,
@@ -239,7 +239,7 @@ def main():
             payment_method = st.selectbox('결제 수단', payment_method_list)
             individual_or_group = st.selectbox('개인/그룹', individual_or_group_list)
             start_date = st.date_input('시작일')
-            repeat_number = st.number_input('반복 횟수', min_value=0, format="%.d")
+            repeat_number = st.number_input('쿠폰 횟수', min_value=0, format="%.d")
             membership_grade = st.selectbox('테니스 Level', membership_grade_list)
             coach = st.selectbox('담당 코치', coach_list)
             payment_amount = st.number_input('결제 금액', min_value=0, format="%.d")
@@ -259,7 +259,7 @@ def main():
                 '결제 수단': payment_method,
                 '개인/그룹': individual_or_group,
                 '시작일': start_date,
-                '반복 횟수': repeat_number,
+                '쿠폰 횟수': repeat_number,
                 '회원 등급': membership_grade,
                 '담당 코치': coach,
                 '결제 금액': payment_amount,
